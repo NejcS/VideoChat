@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Socket.IO chat</title>
+        <style>
+            .room-prompt {
+                width: 150px;
+                margin: 200px auto 0 auto;
+                background-color: #f0f0f0;
+                border: 1px solid #c0c0c0;
+                box-shadow: 3px 0px 10px #000;
+                border-radius: 10px;
+                padding: 30px;
+            }
+        </style>
+    </head>
+    <body>
+        <ul id="messages"></ul>
+        <div class="room-prompt">
+            <form action="">
+                <label>Room name: </label>
+                <input id="room-name" /><button>Send</button>
+            </form>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+        <script src="client.js"></script>
+    </body>
+</html>
