@@ -16,12 +16,15 @@
     </head>
     <body>
         <ul id="messages"></ul>
-        <div class="room-prompt">
-            <form action="">
-                <label>Room name: </label>
-                <input id="room-name" /><button>Send</button>
-            </form>
-        </div>
+        <form class="room-prompt" action="">
+            <label>Room name: </label>
+            <input id="room-name" /><button>Send</button>
+        </form>        
+        <form class="data-prompt" action="">
+            <label>Data message: </label>
+            <input id="data" /><button>Send</button>
+        </form>
+
 
         <script src="/socket.io/socket.io.js"></script>
         <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
