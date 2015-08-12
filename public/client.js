@@ -1,7 +1,7 @@
 var socket = io();
 
 $('form.room-prompt').submit(function(){
-	socket.emit('room name', $('#room-name').val());
+	socket.emit('roomName', $('#room-name').val());
 	$(this).hide('');
 
 	return false;

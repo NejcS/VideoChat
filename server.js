@@ -15,7 +15,7 @@ app.get('/', function(req, res){
 io.on('connection', function(socket) {
 	var currentRoom;
 
-	socket.on('room name', function(roomName) {
+	socket.on('roomName', function(roomName) {
 		var room1 = new Room(roomName, 234, 2);
 
 		if (rooms[roomName]) {
