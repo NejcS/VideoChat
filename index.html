@@ -1,22 +1,83 @@
 <!doctype html>
 <html>
     <head>
-        <title>Socket.IO chat</title>
+        <title>Chatroom</title>
     </head>
     <body>
-        <ul id="messages"></ul>
-        <form class="room-prompt" action="">
-            <label>Room name: </label>
-            <input id="room-name" /><button>Send</button>
-        </form>        
-        <form class="data-prompt" action="">
-            <label>Data message: </label>
-            <input id="data" /><button>Send</button>
-        </form>
+        <nav class="navbar navbar-default">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              <a class="navbar-brand" href="#">Video chat</a>
+            </div>
 
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+              <ul class="nav navbar-nav">
+                <li><a href="#">Leave</a></li>
+                <li><a href="#">Mute</a></li>
+                <li><a href="#">Lock</a></li>
+                <li><a href="#">Disable camera</a></li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-10">
+                    <video id="away-video"></video>
 
+                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3 class="modal-title" id="myModalLabel">Hello!</h3>
+                                </div>
+                                <div class="modal-body">
+                                    <h5>To continue, enter your display name and the name of the room you wish to join or create.</h5>
+                                    <form class="form-horizontal">
+                                        <div class="form-group">
+                                            <label class="control-label col-lg-3" for="inputDefault">Display name</label>
+                                            <div class="col-lg-9">
+                                                <input type="text" class="form-control empty" id="userNameInput">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label col-lg-3" for="inputDefault">Room name</label>
+                                            <div class="col-lg-9">
+                                                <input type="text" class="form-control empty" id="roomNameInput">
+                                            </div>
+                                        </div>
+                                    </form>
+                                    <div class="alert alert-danger no-user" style="display: none;">Enter your display name</div>
+                                    <div class="alert alert-danger no-room" style="display: none;">Enter the name of the room you wish to join or create</div>
+                                    <div class="alert alert-danger no-data" style="display: none;">Room name and dispay name are not provided</div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-primary">Connect!</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="col-md-2">
+                    <video id="home-video"></video>
+                </div>
+            </div>
+        </div>
+        <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="/css/material.css">
         <script src="/socket.io/socket.io.js"></script>
-        <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
-        <script src="client.js"></script>
+        <script src="/scripts/jquery.min.js"></script>
+        <script src="/scripts/bootstrap.min.js"></script>
+        <script src="/scripts/material.js"></script>
+        <script src="/scripts/ripples.js"></script>
+        <script src="/scripts/client.js"></script>
+        <link rel='shortcut icon' type='image/x-icon' href='/favicons/favicon.png'/>
     </body>
 </html>
