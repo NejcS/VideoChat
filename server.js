@@ -34,11 +34,13 @@ io.on('connection', function(socket) {
 		}
 		currentRoom = roomName;
 		rooms[roomName].listMembers();
+		socket.emit("joinedRoom", roomName);
 	});
 
-	socket.on('messageToRoom', function(data) {
-		socket.broadcast.to(currentRoom).emit('roomBroadcast', data);
+	socket.on('message', function(message) {
+		socket.broadcast.to(currentRoom).emit('message to peers', message);
 	});
+
 });
 
 http.listen(3000, function(){

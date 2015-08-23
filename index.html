@@ -29,7 +29,9 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-10">
-                    <video id="away-video"></video>
+                    <div class="panel panel-default">
+                        <video id="away-video"></video>
+                    </div>
 
                     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
                         <div class="modal-dialog" role="document">
@@ -66,7 +68,19 @@
 
                 </div>
                 <div class="col-md-2">
-                    <video id="home-video"></video>
+                    <div class="panel panel-default">
+                        <video id="home-video"></video>
+                    </div>
+                    <div class="panel panel-primary">
+                        <div class="panel-heading room-name">
+                            Your room: 
+                        </div>
+                        <div class="panel-body room-members">
+
+
+                            <a id="makeCall" class="btn btn-primary btn-raised">Make a call</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
