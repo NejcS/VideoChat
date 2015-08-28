@@ -27,14 +27,15 @@ io.on('connection', function(socket) {
 				return;
 			} else {
 				socket.join(roomName);
+				socket.emit("joinedRoom", {roomName: roomName, isInitiator: false});
+				socket.broadcast.to(roomName).emit('peer joined room');
 			}
 		} else {
 			rooms[roomName] = new Room(roomName, socket.client.conn.id, 2);
 			socket.join(roomName);
+			socket.emit("joinedRoom", {roomName: roomName, isInitiator: true});
 		}
 		currentRoom = roomName;
-		rooms[roomName].listMembers();
-		socket.emit("joinedRoom", roomName);
 	});
 
 	socket.on('message', function(message) {
