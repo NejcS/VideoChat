@@ -1,4 +1,4 @@
-$.material.init() // za ripple effect je treba še neki dodat
+$.material.init()
 var socket = io();
 
 (function() {
@@ -18,6 +18,79 @@ var socket = io();
 		'OfferToReceiveAudio':true,
 		'OfferToReceiveVideo':true }
 	};
+
+/********************************** callbacks ****************************************/
+
+	var handleIceCandidate = function(event) {
+		if (event.candidate) {
+			socket.emit('message', {
+				type: 'candidate',
+				label: event.candidate.sdpMLineIndex,
+				id: event.candidate.sdpMip,
+				candidate: event.candidate.candidate
+			});
+		}
+	};
+
+	var handleUserMedia = function(stream) {
+		var video = $container.find("#home-video")[0];
+		video.src = window.URL.createObjectURL(stream);
+		localStream = stream;
+		video.play();
+	};
+
+	var handleRemoteStreamAdded = function(event) {
+		var video = $("#away-video")[0];
+		video.src = window.URL.createObjectURL(event.stream);
+		remoteStream = event.stream;
+		video.play();
+	};
+
+	var handleError = function(error) {
+		console.log(error);
+	};
+
+	function setLocalAndSendMessage(sessionDescription) {
+		pc.setLocalDescription(sessionDescription);
+		socket.emit('message', sessionDescription);
+	};
+
+/*************************************************************************************/
+
+	var maybeStart = function() {
+		if (!isStarted && typeof localStream != "undefined" && isChannelReady) {
+			pc = new webkitRTCPeerConnection(null);
+			pc.onicecandidate = handleIceCandidate;
+			pc.onaddstream = handleRemoteStreamAdded;
+			pc.addStream(localStream);
+			isStarted = true;
+
+			if (isInitiator) {
+				pc.createOffer(setLocalAndSendMessage, handleError);
+			}
+		}
+	};
+
+	socket.on("message to peers", function(message) {
+		if (message === 'got user media') {
+			maybeStart();
+		} else if (message.type === 'offer') {
+			if (!isInitiator && !isStarted) {
+				maybeStart();
+			}
+			pc.setRemoteDescription(new RTCSessionDescription(message));
+			pc.createAnswer(setLocalAndSendMessage, null, sdpConfig);
+
+		} else if (message.type === 'answer' && isStarted) {
+			pc.setRemoteDescription(new RTCSessionDescription(message));
+		} else if (message.type === 'candidate' && isStarted) {
+			var candidate = new RTCIceCandidate({
+			  sdpMLineIndex: message.label,
+			  candidate: message.candidate
+			});
+			pc.addIceCandidate(candidate);
+		}
+	});
 
 	var joinRoom = function() {
 		var userName = $container.find("#myModal #userNameInput").val();
@@ -39,13 +112,12 @@ var socket = io();
 			isChannelReady = !doc.isInitiator;
 
 			if (doc.isInitiator) {
+				$container.find("#makeCall").prop("disabled", false);
 				console.log("You created the room.");
 			} else {
 				console.log("You have joined an existing room.");
 			}
-/*
-getUserMedia sem sem prestavil iz click handlerja 
-*/
+
 			getUserMedia.call(navigator, {video: true}, handleUserMedia, handleError);
 		});
 		socket.on("peer joined room", function() { console.log("Peer joined this room.");
@@ -57,89 +129,6 @@ getUserMedia sem sem prestavil iz click handlerja
 		$modal.modal('toggle');
 	}
 
-	var handleIceCandidate = function(event) {
-		if (event.candidate) {
-			socket.emit('message', {
-				type: 'candidate',
-				label: event.candidate.sdpMLineIndex,
-				id: event.candidate.sdpMip,
-				candidate: event.candidate.candidate
-			});
-		} else {
-			console.log("End of candidates.");
-		}
-	};
-
-	var handleUserMedia = function(stream) {
-		// play the stream on the smaller <video>
-		console.log("Adding local stream");
-		var video = $container.find("#home-video")[0];
-		video.src = window.URL.createObjectURL(stream);
-		localStream = stream;
-		video.play();
-
-		if (isInitiator) {
-			maybeStart();
-		}
-	};
-
-	var handleRemoteStreamAdded = function(event) {
-		var video = $("#away-video")[0];
-		video.src = window.URL.createObjectURL(event.stream);
-		remoteStream = event.stream;
-		video.play();
-	};
-
-	var handleError = function(error) {
-		console.log(error);
-	}
-
-	function setLocalAndSendMessage(sessionDescription) {
-		pc.setLocalDescription(sessionDescription);
-		socket.emit('message', sessionDescription);
-	}
-
-	var maybeStart = function() {
-		if (!isStarted && typeof localStream != "undefined" && isChannelReady) {
-
-			pc = new webkitRTCPeerConnection(null);
-			pc.onicecandidate = handleIceCandidate;
-			pc.onaddstream = handleRemoteStreamAdded;
-			// pc.onremovestream = ...
-			pc.addStream(localStream);
-			isStarted = true;
-
-			if (isInitiator) {
-				pc.createOffer(setLocalAndSendMessage, handleError);
-			}
-		}
-	};
-
-	socket.on("message to peers", function(message) {
-		console.log(message);
-
-		if (message === 'got user media') {
-			maybeStart();
-		} else if (message.type === 'offer') {
-			if (!isInitiator && !isStarted) {
-				maybeStart();
-			}
-			pc.setRemoteDescription(new RTCSessionDescription(message));
-			pc.createAnswer(setLocalAndSendMessage, null, sdpConfig);
-
-		} else if (message.type === 'answer' && isStarted) {
-			pc.setRemoteDescription(new RTCSessionDescription(message));
-		} else if (message.type === 'candidate' && isStarted) {
-			var candidate = new RTCIceCandidate({
-			  sdpMLineIndex: message.label,
-			  candidate: message.candidate
-			});
-			pc.addIceCandidate(candidate);
-		} else if (message === 'bye' && isStarted) {
-			//handleRemoteHangup();
-		}
-	});
-
 	setTimeout(function() {
 		$container.find("#myModal").modal();
 
@@ -149,22 +138,11 @@ getUserMedia sem sem prestavil iz click handlerja
 		        joinRoom();
 		    }
 		});
-
 	}, 1000);
 
-	$container.find("#makeCall").click(function() {
-/*
-	Prestavi to takoj za joinanje rooma.
-	
-
-	"Kdo je initiator" logika bo morda drugačna.
-
-
-	1. joinaš roomu
-
-	2. potrdiš get user media
-		(kako se bo spremenil maybeStart() v spodnjemu callbacku?)
-	3. klikneš na start video call
-*/
+	$container.find("#makeCall").click(function() {debugger;
+		if (isInitiator) {
+			maybeStart();
+		}
 	});
 }());
