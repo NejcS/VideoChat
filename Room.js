@@ -48,11 +48,16 @@ module.exports = function (roomName, clientId, limit) {
     	console.log(data.members);
     };
 
+    var firstMember = function() {
+        return data.members[0];
+    };
+
     return {
     	lock: lock,
     	listMembers: listMembers,
     	isEmpty: isEmpty,
     	leave: leave,
-    	join: join
+    	join: join,
+        firstMember: firstMember,
     };
 };

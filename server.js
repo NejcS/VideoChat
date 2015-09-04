@@ -20,18 +20,18 @@ io.on('connection', function(socket) {
 		var room1 = new Room(roomName, 234, 2);
 
 		if (rooms[roomName]) {
-			var joinStatus = rooms[roomName].join(socket.client.conn.id);
+			var joinStatus = rooms[roomName].join(userName);
 
 			if (!joinStatus) {
 				console.log('The room is full.');
 				return;
 			} else {
 				socket.join(roomName);
-				socket.emit("joinedRoom", {roomName: roomName, isInitiator: false});
-				socket.broadcast.to(roomName).emit('peer joined room');
+				socket.emit("joinedRoom", {roomName: roomName, isInitiator: false, peerName: rooms[roomName].firstMember()});
+				socket.broadcast.to(roomName).emit('peer joined room', {peerName: userName});
 			}
 		} else {
-			rooms[roomName] = new Room(roomName, socket.client.conn.id, 2);
+			rooms[roomName] = new Room(roomName, userName, 2);
 			socket.join(roomName);
 			socket.emit("joinedRoom", {roomName: roomName, isInitiator: true});
 		}

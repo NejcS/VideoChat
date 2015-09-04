@@ -28,8 +28,8 @@
         </nav>
         <div class="container-fluid">
             <div class="row">
-                <div class="col-md-10">
-                    <div class="panel panel-primary">
+                <div class="col-md-9">
+                    <div class="panel panel-primary away-video-container">
                         <video id="away-video"></video>
                     </div>
 
@@ -67,8 +67,8 @@
                     </div>
 
                 </div>
-                <div class="col-md-2">
-                    <div class="panel panel-primary">
+                <div class="col-md-3">
+                    <div class="panel panel-primary home-video-container">
                         <video id="home-video"></video>
                     </div>
                     <div class="panel panel-primary">
@@ -76,11 +76,21 @@
                             Your room: 
                         </div>
                         <div class="panel-body room-members">
-                            <button id="makeCall" class="btn btn-primary btn-raised" disabled="disabled">Make a call</button>
+                            <button id="makeCall" class="btn btn-primary btn-raised" disabled="disabled">Connect with peer</button>
                         </div>
                     </div>
-                    <div class="panel panel-primary">
-                        <div class="panel-body text-chat">
+                    <div class="panel panel-primary text-chat-container">
+                        <div class="panel-body">
+                            <div class="panel-text-containertext-containertext-containerbody text-chat">
+                            </div>
+                            <input type="text" id="text-container">
+                            <button id="send-text" class="btn btn-primary btn-raised">Send text</button>
+                        </div>
+                    </div>
+                    <div class="panel panel-primary file-transfer-container">
+                        <div class="panel-body">
+                            <input type="file" id="file-selector">
+                            <button id="send-file" class="btn btn-primary btn-raised">Send file</button>
                         </div>
                     </div>
                 </div>

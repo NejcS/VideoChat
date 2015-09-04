@@ -9,14 +9,29 @@ var socket = io();
 	var isInitiator = false;
 	var isChannelReady = false;
 	var pc;
-	var localStream;
-	var remoteStream;
+	var localStream, remoteStream;
+	var textChannel, fileChannel;
+	var peerName, userName, roomName;
 	var getUserMedia = navigator.getUserMedia ||
   			navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
 	var sdpConfig = {'mandatory': {
-		'OfferToReceiveAudio':true,
-		'OfferToReceiveVideo':true }
+		'OfferToReceiveAudio':false,
+		'OfferToReceiveVideo':false }
+	};
+
+	var fileChannelConfig = {
+		ordered: true
+	};
+
+/********************************** UI stuff ****************************************/
+
+	var insertMessage = function(message, amSender) {
+		var html = '<div class="text-chat-line text-chat-' + (amSender ? "sent" : "received") + '">';
+		html += '<b>' + (amSender ? userName : peerName) + ': </b> ';
+		html += message;
+		html += '</div>';
+		$container.find(".text-chat").append(html);
 	};
 
 /********************************** callbacks ****************************************/
@@ -59,11 +74,18 @@ var socket = io();
 
 	var maybeStart = function() {
 		if (!isStarted && typeof localStream != "undefined" && isChannelReady) {
-			pc = new webkitRTCPeerConnection(null);
+			pc = new webkitRTCPeerConnection(null, {optional: [{RtpDataChannels: true}]});
 			pc.onicecandidate = handleIceCandidate;
 			pc.onaddstream = handleRemoteStreamAdded;
 			pc.addStream(localStream);
 			isStarted = true;
+
+			textChannel = pc.createDataChannel("textChat", null);
+			textChannel.onerror = handleError;
+			textChannel.onmessage = receiveText;
+
+			fileChannel = pc.createDataChannel("fileTransfer", fileChannelConfig);
+			fileChannel.onmessage = receiveFile;
 
 			if (isInitiator) {
 				pc.createOffer(setLocalAndSendMessage, handleError);
@@ -93,8 +115,8 @@ var socket = io();
 	});
 
 	var joinRoom = function() {
-		var userName = $container.find("#myModal #userNameInput").val();
-		var roomName = $container.find("#myModal #roomNameInput").val();
+		userName = $container.find("#myModal #userNameInput").val();
+		roomName = $container.find("#myModal #roomNameInput").val();
 
 		if ((!userName || userName === '') && (!roomName || roomName === '')) {
 			$container.find("#myModal .alert.no-data").show();
@@ -107,6 +129,7 @@ var socket = io();
 			return;
 		}
 		socket.on("joinedRoom", function(doc) {
+			peerName = doc.peerName;
 			isInitiator = doc.isInitiator;
 			$container.find("div.room-name").append(doc.roomName);
 			isChannelReady = !doc.isInitiator;
@@ -120,29 +143,71 @@ var socket = io();
 
 			getUserMedia.call(navigator, {video: true}, handleUserMedia, handleError);
 		});
-		socket.on("peer joined room", function() { console.log("Peer joined this room.");
+		socket.on("peer joined room", function(doc) { console.log("Peer joined this room.");
 			isChannelReady = true;
+			peerName = doc.peerName;
 		});
 
 
 		socket.emit('roomName', userName, roomName);
 		$modal.modal('toggle');
+		// Unbind Enter key used for the form
+		$(document).unbind("keypress.key13");
 	}
+
+	var transferFile = function() {
+		var file = document.getElementById('file-selector').files[0];
+		var reader = new FileReader();
+
+		textChannel.send('-.-.-.-' + JSON.stringify({size: file.size, name: file.name}));
+	};
+
+	var receiveFile = function(event) {
+		if (event.data) {
+			var link = document.createElement('a');
+			var data = new window.Blob(event.data);
+			link.href = window.URL.createObjectURL(data);
+			link.download = 'transfered file';
+			link.click();
+		}
+	};
+
+	var receiveText = function(event) {
+		if (event.data.slice(0, 7) === '-.-.-.-') {
+			var serializedObject = event.data.slice(7);
+			var fileProperties = JSON.parse(serializedObject);
+
+			debugger;
+
+			var message = "Started file transfer.";
+		} else {
+			var message = event.data;
+		}
+		insertMessage(message, false);
+	};
 
 	setTimeout(function() {
 		$container.find("#myModal").modal();
-
 		$container.find("#myModal button").click(joinRoom);
-		$(document).keypress(function(e) {
+
+		$(document).bind("keypress.key13", function(e) {
 		    if(e.which == 13) {
 		        joinRoom();
 		    }
 		});
-	}, 1000);
+	}, 1000);	
 
-	$container.find("#makeCall").click(function() {debugger;
+	$container.find("#makeCall").click(function() {
 		if (isInitiator) {
 			maybeStart();
 		}
 	});
+
+	$container.find("#send-text").click(function() {
+		var text = $container.find("#text-container").val();
+		textChannel.send(text);
+		insertMessage(text, true);
+	});
+
+	$container.find('#send-file').click(transferFile);
 }());

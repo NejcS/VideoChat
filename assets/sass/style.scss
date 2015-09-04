@@ -13,6 +13,34 @@
 	width: 100%;  
 }
 
+.away-video-container,
+.home-video-container {
+    padding: 5px 5px 0px 5px;
+}
+
 div.alert-danger {
 	color: rgba(255, 255, 255, 0.84);
+}
+
+.text-chat-line {
+    z-index: 1;
+    margin: 5px 10px 0px 10px;
+
+    &.text-chat-sent {
+        text-align: left;
+    }
+    &.text-chat-received {
+        text-align: right;
+    }
+}
+
+#text-container {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.file-transfer-container,
+.room-members,
+.text-chat-container {
+    text-align: center;
 }
