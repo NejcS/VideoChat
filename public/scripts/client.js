@@ -10,8 +10,12 @@ var socket = io();
 	var isChannelReady = false;
 	var pc;
 	var localStream, remoteStream;
-	var textChannel, fileChannel;
+	var textChannel;
+//	var fileChannel;
 	var peerName, userName, roomName;
+//	var fileProperties;
+//	var receivedBuffer = [];
+//	var receivedSize = 0;
 	var getUserMedia = navigator.getUserMedia ||
   			navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
@@ -74,7 +78,7 @@ var socket = io();
 
 	var maybeStart = function() {
 		if (!isStarted && typeof localStream != "undefined" && isChannelReady) {
-			pc = new webkitRTCPeerConnection(null, {optional: [{RtpDataChannels: true}]});
+			pc = new webkitRTCPeerConnection(null, {optional: [{RtpDataChannels: true}]});		// {optional: [{RtpDataChannels: true}]}
 			pc.onicecandidate = handleIceCandidate;
 			pc.onaddstream = handleRemoteStreamAdded;
 			pc.addStream(localStream);
@@ -83,10 +87,11 @@ var socket = io();
 			textChannel = pc.createDataChannel("textChat", null);
 			textChannel.onerror = handleError;
 			textChannel.onmessage = receiveText;
-
+/*
 			fileChannel = pc.createDataChannel("fileTransfer", fileChannelConfig);
+			fileChannel.binaryType = 'arraybuffer';
 			fileChannel.onmessage = receiveFile;
-
+*/
 			if (isInitiator) {
 				pc.createOffer(setLocalAndSendMessage, handleError);
 			}
@@ -154,35 +159,57 @@ var socket = io();
 		// Unbind Enter key used for the form
 		$(document).unbind("keypress.key13");
 	}
-
+/*
 	var transferFile = function() {
 		var file = document.getElementById('file-selector').files[0];
-		var reader = new FileReader();
-
 		textChannel.send('-.-.-.-' + JSON.stringify({size: file.size, name: file.name}));
+
+		var chunkSize = 1000;
+
+		var sliceFile = function(offset) {
+			var reader = new FileReader();
+
+			reader.onload = (function() {
+				return function(e) {
+					fileChannel.send(e.target.result);
+
+					if (file.size > offset + e.target.result.byteLength) {
+						window.setTimeout(sliceFile, 500, offset + chunkSize);
+					}
+				};
+			})(file);
+
+			var slice = file.slice(offset, offset + chunkSize);
+			reader.readAsArrayBuffer(slice);
+		};
+
+		sliceFile(0);
 	};
 
 	var receiveFile = function(event) {
-		if (event.data) {
-			var link = document.createElement('a');
-			var data = new window.Blob(event.data);
-			link.href = window.URL.createObjectURL(data);
-			link.download = 'transfered file';
-			link.click();
+		receivedBuffer.push(event.data);
+		receivedSize += event.data.byteLength;
+
+		if (receivedSize == fileProperties.size) {
+			var received = new window.Blob(receivedBuffer);
+			receivedBuffer = [];	// zakaj?
+
+			var downloadLink = $container.find('#download')[0];
+			downloadLink.href = URL.createObjectURL(received);
 		}
 	};
-
+*/
 	var receiveText = function(event) {
+/*		
 		if (event.data.slice(0, 7) === '-.-.-.-') {
 			var serializedObject = event.data.slice(7);
-			var fileProperties = JSON.parse(serializedObject);
-
-			debugger;
-
-			var message = "Started file transfer.";
+			fileProperties = JSON.parse(serializedObject);
+			var message = "Started transfering file " + fileProperties.name;
 		} else {
 			var message = event.data;
 		}
+*/
+		var message = event.data;
 		insertMessage(message, false);
 	};
 
@@ -209,5 +236,5 @@ var socket = io();
 		insertMessage(text, true);
 	});
 
-	$container.find('#send-file').click(transferFile);
+//	$container.find('#send-file').click(transferFile);
 }());
