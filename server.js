@@ -9,7 +9,11 @@ var Room = require('./Room.js');
 var rooms = {};
 
 app.get('/', function(req, res){
-	res.sendFile(__dirname + '/index.html');
+	res.sendFile(__dirname + '/calling.html');
+});
+
+app.get('/file', function(req, res) {
+	res.sendFile(__dirname + '/fileSharing.html')
 });
 
 io.on('connection', function(socket) {

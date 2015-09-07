@@ -9,13 +9,12 @@ var socket = io();
 	var isInitiator = false;
 	var isChannelReady = false;
 	var pc;
-	var localStream, remoteStream;
 	var textChannel;
-//	var fileChannel;
+	var fileChannel;
 	var peerName, userName, roomName;
-//	var fileProperties;
-//	var receivedBuffer = [];
-//	var receivedSize = 0;
+	var fileProperties;
+	var receivedStack = [];
+	var receivedSize = 0;
 	var getUserMedia = navigator.getUserMedia ||
   			navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
@@ -51,23 +50,7 @@ var socket = io();
 		}
 	};
 
-	var handleUserMedia = function(stream) {
-		var video = $container.find("#home-video")[0];
-		video.src = window.URL.createObjectURL(stream);
-		localStream = stream;
-		video.play();
-	};
-
-	var handleRemoteStreamAdded = function(event) {
-		var video = $("#away-video")[0];
-		video.src = window.URL.createObjectURL(event.stream);
-		remoteStream = event.stream;
-		video.play();
-	};
-
-	var handleError = function(error) {
-		console.log(error);
-	};
+	var handleError = function(error) { console.log(error); };
 
 	function setLocalAndSendMessage(sessionDescription) {
 		pc.setLocalDescription(sessionDescription);
@@ -77,21 +60,20 @@ var socket = io();
 /*************************************************************************************/
 
 	var maybeStart = function() {
-		if (!isStarted && typeof localStream != "undefined" && isChannelReady) {
+		if (!isStarted && isChannelReady) {
 			pc = new webkitRTCPeerConnection(null, {optional: [{RtpDataChannels: true}]});		// {optional: [{RtpDataChannels: true}]}
 			pc.onicecandidate = handleIceCandidate;
-			pc.onaddstream = handleRemoteStreamAdded;
-			pc.addStream(localStream);
 			isStarted = true;
 
 			textChannel = pc.createDataChannel("textChat", null);
 			textChannel.onerror = handleError;
 			textChannel.onmessage = receiveText;
-/*
-			fileChannel = pc.createDataChannel("fileTransfer", fileChannelConfig);
+
+			fileChannel = pc.createDataChannel("fileTransfer", {reliable: true});
 			fileChannel.binaryType = 'arraybuffer';
 			fileChannel.onmessage = receiveFile;
-*/
+			fileChannel.onerror = handleError;
+
 			if (isInitiator) {
 				pc.createOffer(setLocalAndSendMessage, handleError);
 			}
@@ -145,12 +127,11 @@ var socket = io();
 			} else {
 				console.log("You have joined an existing room.");
 			}
-
-			getUserMedia.call(navigator, {video: true}, handleUserMedia, handleError);
 		});
 		socket.on("peer joined room", function(doc) { console.log("Peer joined this room.");
 			isChannelReady = true;
 			peerName = doc.peerName;
+			maybeStart();
 		});
 
 
@@ -159,48 +140,69 @@ var socket = io();
 		// Unbind Enter key used for the form
 		$(document).unbind("keypress.key13");
 	}
-/*
+
 	var transferFile = function() {
 		var file = document.getElementById('file-selector').files[0];
 		textChannel.send('-.-.-.-' + JSON.stringify({size: file.size, name: file.name}));
+		
+		var reader = new window.FileReader();
+		var chunkSize = 750;
 
-		var chunkSize = 1000;
+		function onReadAsDataURL(event, text) {
+		    var data = {};
 
-		var sliceFile = function(offset) {
-			var reader = new FileReader();
+		    if (event) {
+		    	// save the text on first call
+		    	text = event.target.result;
+		    }
 
-			reader.onload = (function() {
-				return function(e) {
-					fileChannel.send(e.target.result);
+		    if (text.length > chunkSize) {
+		        data.message = text.slice(0, chunkSize); // getting chunk using predefined chunk length
+		    } else {
+		        data.message = text;
+		        data.last = true;
+		    }
 
-					if (file.size > offset + e.target.result.byteLength) {
-						window.setTimeout(sliceFile, 500, offset + chunkSize);
-					}
-				};
-			})(file);
+		    fileChannel.send(JSON.stringify(data));
 
-			var slice = file.slice(offset, offset + chunkSize);
-			reader.readAsArrayBuffer(slice);
-		};
-
-		sliceFile(0);
+		    var remainingDataURL = text.slice(data.message.length);
+		    
+		    if (remainingDataURL.length) {
+		    	setTimeout(function () {
+			        onReadAsDataURL(null, remainingDataURL); // continue transmitting
+			    }, 500);
+			}
+		}
+		reader.onload = onReadAsDataURL;
+		reader.readAsDataURL(file);
 	};
 
 	var receiveFile = function(event) {
-		receivedBuffer.push(event.data);
-		receivedSize += event.data.byteLength;
+		var data = JSON.parse(event.data);
 
-		if (receivedSize == fileProperties.size) {
-			var received = new window.Blob(receivedBuffer);
-			receivedBuffer = [];	// zakaj?
+	    receivedStack.push(data.message);
 
-			var downloadLink = $container.find('#download')[0];
-			downloadLink.href = URL.createObjectURL(received);
-		}
+	    if (data.last) {
+	        saveToDisk(receivedStack.join(''), fileProperties.name);
+	        receivedStack = [];
+	    }
 	};
-*/
-	var receiveText = function(event) {
-/*		
+
+	var saveToDisk = function(fileUrl, fileName) {
+	    var save = document.createElement('a');
+	    save.href = fileUrl;
+	    save.target = '_blank';
+	    save.download = fileName || fileUrl;
+
+	    var event = document.createEvent('Event');
+	    event.initEvent('click', true, true);
+
+	    save.dispatchEvent(event);
+	    (window.URL || window.webkitURL).revokeObjectURL(save.href);
+	};
+
+
+	var receiveText = function(event) {		
 		if (event.data.slice(0, 7) === '-.-.-.-') {
 			var serializedObject = event.data.slice(7);
 			fileProperties = JSON.parse(serializedObject);
@@ -208,8 +210,7 @@ var socket = io();
 		} else {
 			var message = event.data;
 		}
-*/
-		var message = event.data;
+
 		insertMessage(message, false);
 	};
 
@@ -224,17 +225,11 @@ var socket = io();
 		});
 	}, 1000);	
 
-	$container.find("#makeCall").click(function() {
-		if (isInitiator) {
-			maybeStart();
-		}
-	});
+	$container.find("#sendFile").click(transferFile);
 
 	$container.find("#send-text").click(function() {
 		var text = $container.find("#text-container").val();
 		textChannel.send(text);
 		insertMessage(text, true);
 	});
-
-//	$container.find('#send-file').click(transferFile);
 }());
