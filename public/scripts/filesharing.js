@@ -27,6 +27,14 @@ var socket = io();
 		ordered: true
 	};
 
+	var servers = {
+		'iceServers': [ {url:'stun:stun.l.google.com:19302'},
+						{url:'stun:stun1.l.google.com:19302'},
+						{url:'stun:stun2.l.google.com:19302'},
+						{url:'stun:stun3.l.google.com:19302'},
+						{url:'stun:stun4.l.google.com:19302'}]
+	};
+
 /********************************** UI stuff ****************************************/
 
 	var insertMessage = function(message, amSender) {
@@ -61,7 +69,7 @@ var socket = io();
 
 	var maybeStart = function() {
 		if (!isStarted && isChannelReady) {
-			pc = new webkitRTCPeerConnection(null, {optional: [{RtpDataChannels: true}]});		// {optional: [{RtpDataChannels: true}]}
+			pc = new webkitRTCPeerConnection(servers, {optional: [{RtpDataChannels: true}]});		// {optional: [{RtpDataChannels: true}]}
 			pc.onicecandidate = handleIceCandidate;
 			isStarted = true;
 

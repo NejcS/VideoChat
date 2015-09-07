@@ -11,11 +11,7 @@ var socket = io();
 	var pc;
 	var localStream, remoteStream;
 	var textChannel;
-//	var fileChannel;
 	var peerName, userName, roomName;
-//	var fileProperties;
-//	var receivedBuffer = [];
-//	var receivedSize = 0;
 	var getUserMedia = navigator.getUserMedia ||
   			navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
@@ -24,8 +20,12 @@ var socket = io();
 		'OfferToReceiveVideo':false }
 	};
 
-	var fileChannelConfig = {
-		ordered: true
+	var servers = {
+		'iceServers': [ {url:'stun:stun.l.google.com:19302'},
+						{url:'stun:stun1.l.google.com:19302'},
+						{url:'stun:stun2.l.google.com:19302'},
+						{url:'stun:stun3.l.google.com:19302'},
+						{url:'stun:stun4.l.google.com:19302'}]
 	};
 
 /********************************** UI stuff ****************************************/
@@ -78,7 +78,7 @@ var socket = io();
 
 	var maybeStart = function() {
 		if (!isStarted && typeof localStream != "undefined" && isChannelReady) {
-			pc = new webkitRTCPeerConnection(null, {optional: [{RtpDataChannels: true}]});		// {optional: [{RtpDataChannels: true}]}
+			pc = new webkitRTCPeerConnection(servers, {optional: [{RtpDataChannels: true}]});		// {optional: [{RtpDataChannels: true}]}
 			pc.onicecandidate = handleIceCandidate;
 			pc.onaddstream = handleRemoteStreamAdded;
 			pc.addStream(localStream);
@@ -155,7 +155,7 @@ var socket = io();
 		socket.emit('roomName', userName, roomName);
 		$modal.modal('toggle');
 		// Unbind Enter key used for the form
-		$(document).unbind("keypress.key13");
+		$(document).unbind("keypress.key13");	
 	}
 /*
 	var transferFile = function() {
