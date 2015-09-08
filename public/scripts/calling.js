@@ -5,6 +5,7 @@ var socket = io();
 	var $navbar = $("body > .navbar");
 	var $container = $("body > .container-fluid");
 	var $modal = $container.find("#myModal");
+	var $textContainer = $container.find("#text-container");
 	var isStarted = false;
 	var isInitiator = false;
 	var isChannelReady = false;
@@ -87,11 +88,7 @@ var socket = io();
 			textChannel = pc.createDataChannel("textChat", null);
 			textChannel.onerror = handleError;
 			textChannel.onmessage = receiveText;
-/*
-			fileChannel = pc.createDataChannel("fileTransfer", fileChannelConfig);
-			fileChannel.binaryType = 'arraybuffer';
-			fileChannel.onmessage = receiveFile;
-*/
+
 			if (isInitiator) {
 				pc.createOffer(setLocalAndSendMessage, handleError);
 			}
@@ -154,61 +151,30 @@ var socket = io();
 
 		socket.emit('roomName', userName, roomName);
 		$modal.modal('toggle');
+		
 		// Unbind Enter key used for the form
-		$(document).unbind("keypress.key13");	
+		$(document).unbind("keypress.key13");
+
+		$(document).bind("keypress.key13", function(e) {
+		    if(e.which == 13) {
+		        sendText();
+		    }
+		});	
 	}
-/*
-	var transferFile = function() {
-		var file = document.getElementById('file-selector').files[0];
-		textChannel.send('-.-.-.-' + JSON.stringify({size: file.size, name: file.name}));
 
-		var chunkSize = 1000;
-
-		var sliceFile = function(offset) {
-			var reader = new FileReader();
-
-			reader.onload = (function() {
-				return function(e) {
-					fileChannel.send(e.target.result);
-
-					if (file.size > offset + e.target.result.byteLength) {
-						window.setTimeout(sliceFile, 500, offset + chunkSize);
-					}
-				};
-			})(file);
-
-			var slice = file.slice(offset, offset + chunkSize);
-			reader.readAsArrayBuffer(slice);
-		};
-
-		sliceFile(0);
-	};
-
-	var receiveFile = function(event) {
-		receivedBuffer.push(event.data);
-		receivedSize += event.data.byteLength;
-
-		if (receivedSize == fileProperties.size) {
-			var received = new window.Blob(receivedBuffer);
-			receivedBuffer = [];	// zakaj?
-
-			var downloadLink = $container.find('#download')[0];
-			downloadLink.href = URL.createObjectURL(received);
-		}
-	};
-*/
 	var receiveText = function(event) {
-/*		
-		if (event.data.slice(0, 7) === '-.-.-.-') {
-			var serializedObject = event.data.slice(7);
-			fileProperties = JSON.parse(serializedObject);
-			var message = "Started transfering file " + fileProperties.name;
-		} else {
-			var message = event.data;
-		}
-*/
 		var message = event.data;
 		insertMessage(message, false);
+	};
+
+	var sendText = function() {
+		var text = $textContainer.val();
+		if (!text) return;
+		
+		$textContainer.val("");
+
+		textChannel.send(text);
+		insertMessage(text, true);
 	};
 
 	setTimeout(function() {
@@ -228,11 +194,5 @@ var socket = io();
 		}
 	});
 
-	$container.find("#send-text").click(function() {
-		var text = $container.find("#text-container").val();
-		textChannel.send(text);
-		insertMessage(text, true);
-	});
-
-//	$container.find('#send-file').click(transferFile);
+	$container.find("#send-text").click(sendText);
 }());
