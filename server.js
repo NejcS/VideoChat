@@ -40,6 +40,11 @@ io.on('connection', function(socket) {
 			socket.emit("joinedRoom", {roomName: roomName, isInitiator: true});
 		}
 		currentRoom = roomName;
+
+		socket.on('leaveRoom', function() {
+			rooms[currentRoom].leave(userName);
+			rooms[currentRoom].unlock();
+		});
 	});
 
 	socket.on('message', function(message) {

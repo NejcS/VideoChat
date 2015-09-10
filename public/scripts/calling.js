@@ -4,6 +4,8 @@ var socket = io();
 (function() {
 	var $navbar = $("body > .navbar");
 	var $container = $("body > .container-fluid");
+	var $awayVideo = $container.find("#away-video")[0];
+	var $homeVideo = $container.find("#home-video")[0];
 	var $modal = $container.find("#myModal");
 	var $textContainer = $container.find("#text-container");
 	var isStarted = false;
@@ -39,6 +41,11 @@ var socket = io();
 		$container.find(".text-chat").append(html);
 	};
 
+	var toggleMute = function(event) {
+		$(event.target).toggleClass("active");
+		$awayVideo.muted = !$awayVideo.muted;
+	};
+
 /********************************** callbacks ****************************************/
 
 	var handleIceCandidate = function(event) {
@@ -53,17 +60,16 @@ var socket = io();
 	};
 
 	var handleUserMedia = function(stream) {
-		var video = $container.find("#home-video")[0];
-		video.src = window.URL.createObjectURL(stream);
+		$homeVideo.muted = true;
+		$homeVideo.src = window.URL.createObjectURL(stream);
 		localStream = stream;
-		video.play();
+		$homeVideo.play();
 	};
 
 	var handleRemoteStreamAdded = function(event) {
-		var video = $("#away-video")[0];
-		video.src = window.URL.createObjectURL(event.stream);
+		$awayVideo.src = window.URL.createObjectURL(event.stream);
 		remoteStream = event.stream;
-		video.play();
+		$awayVideo.play();
 	};
 
 	var handleError = function(error) {
@@ -111,6 +117,9 @@ var socket = io();
 			  candidate: message.candidate
 			});
 			pc.addIceCandidate(candidate);
+		} else if (message.type == "closeConnection") {
+			pc.close();
+			isChannelReady = false;
 		}
 	});
 
@@ -162,12 +171,21 @@ var socket = io();
 		});	
 	}
 
+	var leaveRoom = function() {
+		socket.emit("message", {type: "closeConnection"});
+		setTimeout(function() { pc.close(); }, 500);
+		isChannelReady = false;
+		socket.emit("leaveRoom");
+	};
+
 	var receiveText = function(event) {
 		var message = event.data;
 		insertMessage(message, false);
 	};
 
 	var sendText = function() {
+		if (!isChannelReady) return;
+
 		var text = $textContainer.val();
 		if (!text) return;
 		
@@ -176,6 +194,18 @@ var socket = io();
 		textChannel.send(text);
 		insertMessage(text, true);
 	};
+
+	$container.find("#makeCall").click(function() {
+		if (isInitiator) {
+			maybeStart();
+		}
+	});
+
+	$container.find("#send-text").click(sendText);
+
+	$navbar.find("#mute-audio").click(toggleMute);
+
+	$navbar.find("#leave-room").click(leaveRoom);
 
 	setTimeout(function() {
 		$container.find("#myModal").modal();
@@ -186,13 +216,5 @@ var socket = io();
 		        joinRoom();
 		    }
 		});
-	}, 1000);	
-
-	$container.find("#makeCall").click(function() {
-		if (isInitiator) {
-			maybeStart();
-		}
-	});
-
-	$container.find("#send-text").click(sendText);
+	}, 1000);
 }());

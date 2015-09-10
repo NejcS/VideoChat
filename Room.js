@@ -44,6 +44,10 @@ module.exports = function (roomName, clientId, limit) {
 		data.closed = true;
     };
 
+    var unlock = function () {
+        data.closed = false;
+    };
+
     var listMembers = function() {
     	console.log(data.members);
     };
@@ -54,6 +58,7 @@ module.exports = function (roomName, clientId, limit) {
 
     return {
     	lock: lock,
+        unlock: unlock,
     	listMembers: listMembers,
     	isEmpty: isEmpty,
     	leave: leave,
